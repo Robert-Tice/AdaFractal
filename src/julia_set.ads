@@ -1,11 +1,13 @@
-with Image_Types; use Image_Types;
+with Ada.Streams; use Ada.Streams;
+
+with AWS.Utils; use AWS.Utils;
 
 package Julia_Set is   
    
    procedure Get_Next_Img (C_Img : Float;
                            Width : Natural;
                            Height : Natural;
-                           Bmp   : out Pixel_Array);
+                           Raw   : out Stream_Element_Array_Access);
  
 private   
    type I_Coords is array (Natural range <>) of Float;

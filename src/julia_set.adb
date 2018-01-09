@@ -1,5 +1,10 @@
 with Ada.Numerics.Complex_Types; use Ada.Numerics.Complex_Types;
+with System;
 
+with Image_Types; use Image_Types;
+
+with AWS.Resources.Streams.Memory; use AWS.Resources.Streams.Memory;
+with AWS.Translator; 
 
 package body Julia_Set is 
    
@@ -12,7 +17,7 @@ package body Julia_Set is
    procedure Get_Next_Img (C_Img  : Float;
                            Width  : Natural;
                            Height : Natural;
-                           Bmp    : out Pixel_Array)
+                           Raw    : out Stream_Element_Array_Access)
    is
       Real_Range : constant R_Coords :=
                      (for I in 0 .. (Width - 1) =>
@@ -23,6 +28,8 @@ package body Julia_Set is
                      (for I in 0 .. (Height - 1) =>
                         (Min_I + (Float (I) * 
                          (Max_I - Min_I) / Float (Height))));
+      
+      Idx : Stream_Element_Offset := Raw'First;
    begin
       for X in Imag_Range'Range loop
          for Y in Real_Range'Range loop
@@ -38,10 +45,12 @@ package body Julia_Set is
                   N := N - 5;
                end loop;
                
-               Bmp (Bmp'First (1) + X, Bmp'First (2) + Y) := Pixel'(Red   => N,
-                                                                    Blue  => N,
-                                                                    Green => N,
-                                                                    Alpha => Color'Last);
+               Raw (Idx) := Stream_Element (N);
+               Raw (Idx + 1) := Stream_Element (N);
+               Raw (Idx + 2) := Stream_Element (N);
+               Raw (Idx + 3) := Stream_Element (Color'Last);
+               
+               Idx := Idx + Pixel'Size / 8;                 
             end;
          end loop;
       end loop;

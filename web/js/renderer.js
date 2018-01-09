@@ -1,14 +1,12 @@
 var canvas = document.getElementById('fractalCanvas');
 var ctx = canvas.getContext('2d');
 
-canvas.addEventListener('mousemove', pick);
+var intv = setInterval(update_fractal, 33);
 
-var color = document.getElementById('color');
-var position = document.getElementById('position');
-
-$(document).ready(function() {
-    setInterval(update_fractal, 33);
-});
+(function() {
+    ctx.canvas.width = window.innerWidth;
+    ctx.canvas.height = window.innerHeight;
+})();
 
 function _arrayBufferToBase64( buffer ) {
     var binary = '';
@@ -50,18 +48,5 @@ function quitApp() {
     $.get( "/quit", function( data ) {
         $( "#debug" ).text( data );
     });
-}
-
-function pick(event) {
-    var x = event.layerX;
-    var y = event.layerY;
-    var pos = '(x, y): (' + x + ', ' + y + ')';
-    position.textContent = pos;
-    
-    var pixel = ctx.getImageData(x, y, 1, 1);
-    var data = pixel.data;
-    var rgba = 'rgba(' + data[0] + ', ' + data[1] +
-             ', ' + data[2] + ', ' + data[3] + ')';
-    color.style.background =  rgba;
-    color.textContent = rgba;
+    clearInterval(intv);
 }
