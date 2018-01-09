@@ -1,7 +1,13 @@
 with Ada.Numerics.Complex_Types; use Ada.Numerics.Complex_Types;
 
 
-package body Julia_Set is   
+package body Julia_Set is 
+   
+   Min_R : constant := -2.0;
+   Max_R : constant := 2.0;
+   
+   Min_I : constant := -2.0;
+   Max_I : constant := 2.0;
    
    procedure Get_Next_Img (C_Img  : Float;
                            Width  : Natural;
@@ -9,14 +15,14 @@ package body Julia_Set is
                            Bmp    : out Pixel_Array)
    is
       Real_Range : constant R_Coords :=
-                     (for I in 1 .. Width =>
-                        (Float (I) * 
-                         (Max_R - Min_R) / Float (Width)));
+                     (for I in 0 .. (Width - 1) =>
+                        (Min_R + (Float (I) * 
+                         (Max_R - Min_R) / Float (Width))));
    
       Imag_Range : constant I_Coords := 
-                     (for I in 1 .. Height =>
-                        (Float (I) * 
-                         (Max_I - Min_I) / Float (Height)));
+                     (for I in 0 .. (Height - 1) =>
+                        (Min_I + (Float (I) * 
+                         (Max_I - Min_I) / Float (Height))));
    begin
       for X in Imag_Range'Range loop
          for Y in Real_Range'Range loop
@@ -32,10 +38,10 @@ package body Julia_Set is
                   N := N - 5;
                end loop;
                
-               Bmp (X, Y) := Pixel'(Red   => N,
-                                    Blue  => N,
-                                    Green => N,
-                                    Alpha => Color'Last);
+               Bmp (Bmp'First (1) + X, Bmp'First (2) + Y) := Pixel'(Red   => N,
+                                                                    Blue  => N,
+                                                                    Green => N,
+                                                                    Alpha => Color'Last);
             end;
          end loop;
       end loop;

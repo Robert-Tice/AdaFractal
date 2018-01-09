@@ -1,5 +1,3 @@
-with Ada.Streams; use Ada.Streams;
-
 package Image_Types is
 
    type Color is new Natural range 0 .. 255

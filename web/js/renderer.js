@@ -7,7 +7,7 @@ var color = document.getElementById('color');
 var position = document.getElementById('position');
 
 $(document).ready(function() {
-    update_fractal();
+    setInterval(update_fractal, 33);
 });
 
 function _arrayBufferToBase64( buffer ) {
@@ -23,7 +23,7 @@ function _arrayBufferToBase64( buffer ) {
 function update_fractal() {
     var oReq = new XMLHttpRequest();
     
-    urlStr = "/fractal?" + canvas.width + "?" + canvas.height;
+    urlStr = "/fractal|" + canvas.width + "|" + canvas.height;
     
     oReq.open("GET", urlStr, true);
     oReq.responseType = "arraybuffer";
@@ -39,8 +39,6 @@ function update_fractal() {
             for(var i = 0; i < rawData.length; i++) {
                 rawData[i] = byteArray[i];
             }
-            
-            $("#debug").text(rawData);
             ctx.putImageData(imgData, 0, 0);
         }
     };
