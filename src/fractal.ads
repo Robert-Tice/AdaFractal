@@ -27,22 +27,32 @@ package Fractal is
                             return Complex;
    
    procedure Calculate_Image (Self   : Abstract_Fractal;
-                              C      : Complex;
+                              Esc    : Float;
                               Buffer : out Stream_Element_Array_Access);
    
+   Max_Iterations : constant := Color'Last / 5;
+   
    procedure Calculate_Pixel (Self : Abstract_Fractal; 
-                              C    : Complex;
+                              Esc  : Float;
                               X    : ImgWidth;
                               Y    : ImgHeight;
                               Px   : out Pixel)
    is abstract;
+   
+   procedure Calculate_Pixel_Color (Self  : Abstract_Fractal;
+                                    Z_Mod : Float;
+                                    Iters  : Natural;
+                                    Px     : out Pixel);
+   
+   function Get_Frame (Self : in out Abstract_Fractal) return Color;
    
 private
    
    Real_Max : constant := 2.0;
    Real_Min : constant := (-1) * Real_Max;
    
-   protected type Row_Counter (Max : Integer) is
+   protected type Row_Counter (Max : Integer) 
+   is
       procedure Get_Row (Row  : out Integer);
       procedure Finished;
       
@@ -58,7 +68,7 @@ private
    task type Row_Task is
       entry Initialize (F : Abstract_Fractal_Ptr);
       entry Go (Cntr  : Row_Counter_Ptr;
-                Cmplx : Complex; 
+                E     : Float; 
                 Buf   : Stream_Element_Array_Access);
    end Row_Task;
    
@@ -79,10 +89,13 @@ private
       Task_Pool : Row_Task_Pool (1 .. Task_Pool_Size);
       
       Cntr_Object : Row_Counter_Ptr;
+      
+      Frame_Counter : Color := Color'First;
+      Cnt_Up : Boolean := True;
    end record;
    
    procedure Calculate_Row (Self : Abstract_Fractal;
-                            C    : Complex;
+                            Esc  : Float;
                             Y    : ImgHeight;
                             Idx  : Stream_Element_Offset;
                             Buffer : out Stream_Element_Array_Access);

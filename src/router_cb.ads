@@ -23,10 +23,6 @@ package Router_Cb is
    
 private
    
-   type Counter is mod 10;
-   
-   Frame_Counter : Counter := 0; 
-   
    procedure ImgSize_Parse (URI : String);
    
    JFractal : aliased Julia_Fractal;

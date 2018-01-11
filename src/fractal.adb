@@ -15,6 +15,9 @@ package body Fractal is
          Frct_Ptr.Task_Pool (I).Initialize (F => Frct_Ptr);
       end loop;
       
+      Frct_Ptr.Set_Size (Width  => ImgWidth'Last,
+                         Height => ImgHeight'Last);
+      
    end Initialize;
       
    
@@ -67,13 +70,14 @@ package body Fractal is
    end Calculate_Step;
    
    procedure Calculate_Image (Self : Abstract_Fractal;
-                              C    : Complex;
+                              Esc  : Float;
                               Buffer : out Stream_Element_Array_Access)
    is
-   begin
+   begin     
+      
       for I in Self.Task_Pool'Range loop
          Self.Task_Pool (I).Go (Cntr  => Self.Cntr_Object,
-                                Cmplx => C,
+                                E     => Esc,
                                 Buf   => Buffer);
       end loop;
       
@@ -85,8 +89,64 @@ package body Fractal is
          GNAT.OS_Lib.OS_Exit (-1);
    end Calculate_Image;
    
+   procedure Calculate_Pixel_Color (Self  : Abstract_Fractal;
+                                    Z_Mod : Float;
+                                    Iters  : Natural;
+                                    Px    : out Pixel)
+   is
+      Value : Integer := 765 * (Iters - 1) / Max_Iterations;
+   begin
+      if Z_Mod > 2.0 then
+         if Value > 510 then
+            Px := Pixel'(Red   => Color'Last - Self.Frame_Counter,
+                         Green => Color'Last,
+                         Blue  => Color (Value rem Integer (Color'Last)),
+                         Alpha => Color'Last);
+         elsif Value > 255 then
+            Px := Pixel'(Red   => Color'Last - Self.Frame_Counter,
+                         Green => Color (Value rem Integer (Color'Last)),
+                         Blue  => Color'First + Self.Frame_Counter,
+                         Alpha => Color'Last);
+         else
+            Px := Pixel'(Red   => Color (Value rem Integer (Color'Last)),
+                         Green => Color'First + Self.Frame_Counter,
+                         Blue  => Color'First,
+                         Alpha => Color'Last);
+         end if;
+      else
+         Px := Pixel'(Red   => Color'First + Self.Frame_Counter,
+                      Green => Color'First + Self.Frame_Counter,
+                      Blue  => Color'First + Self.Frame_Counter,
+                      Alpha => Color'Last);
+      end if;
+      
+   end Calculate_Pixel_Color;
+   
+   function Get_Frame (Self : in out Abstract_Fractal) return Color
+   is
+   begin
+      if Self.Cnt_Up then
+         if Self.Frame_Counter = Color'Last then
+            Self.Cnt_Up := not Self.Cnt_Up;
+            return Self.Frame_Counter;
+         else
+            Self.Frame_Counter := Self.Frame_Counter + 5;
+            return (Self.Frame_Counter - 5);
+         end if;
+      end if;
+      
+      if Self.Frame_Counter = Color'First then
+         Self.Cnt_Up := not Self.Cnt_Up;
+         return Self.Frame_Counter;
+      end if;
+      
+      Self.Frame_Counter := Self.Frame_Counter - 5;
+      return (Self.Frame_Counter + 5);
+      
+   end Get_Frame;
+               
    procedure Calculate_Row (Self : Abstract_Fractal;
-                            C    : Complex;
+                            Esc  : Float;
                             Y    : ImgHeight;
                             Idx  : Stream_Element_Offset;
                             Buffer : out Stream_Element_Array_Access)
@@ -95,10 +155,10 @@ package body Fractal is
         with Address => Buffer (Idx)'Address;
    begin
       for X in Line'Range loop   
-         Abstract_Fractal'Class (Self).Calculate_Pixel (C  => C,
-                                                        X  => X,
-                                                        Y  => Y,
-                                                        Px => Line (X));
+         Abstract_Fractal'Class (Self).Calculate_Pixel (Esc  => Esc,
+                                                        X    => X,
+                                                        Y    => Y,
+                                                        Px   => Line (X));
       end loop;
    end Calculate_Row;
    
@@ -134,7 +194,7 @@ package body Fractal is
       Row     : Integer;
       Counter : Row_Counter_Ptr;
       Fct     : Abstract_Fractal_Ptr;
-      C       : Complex;
+      Esc     : Float;
       Buffer  : Stream_Element_Array_Access;
    begin
       accept Initialize (F : Abstract_Fractal_Ptr) do
@@ -143,10 +203,10 @@ package body Fractal is
       
       loop
          accept Go (Cntr  : Row_Counter_Ptr;
-                    Cmplx : Complex;
+                    E     : Float;
                     Buf   : Stream_Element_Array_Access) do
             Counter := Cntr;
-            C := Cmplx;
+            Esc := E;
             Buffer := Buf;
          end Go;
 
@@ -154,7 +214,7 @@ package body Fractal is
             Counter.Get_Row (Row);
             exit when Row = -1;
             
-            Fct.Calculate_Row (C    => C,
+            Fct.Calculate_Row (Esc  => Esc,
                                Y    => Row,
                                Idx  => Buffer'First + 
                                  Stream_Element_Offset ((Row - 1) * Fct.Get_Width * Pixel'Size / 8),

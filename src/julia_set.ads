@@ -13,7 +13,7 @@ package Julia_Set is
 private
    
    procedure Calculate_Pixel (Self : Julia_Fractal; 
-                              C    : Complex;
+                              Esc  : Float;
                               X    : ImgWidth;
                               Y    : ImgHeight;
                               Px   : out Pixel);

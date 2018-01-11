@@ -21,7 +21,7 @@ project Adafractal is
             case Aws_Build is
 
                when "static" =>
-                  for Switches ("ada") use ("-gnatX", "-g");
+                  for Switches ("ada") use ("-gnatX", "-g", "-funroll-loops", "-gnatn", "-O2");
 
                when "relocatable" =>
                   for Switches ("ada") use ("-gnatX");

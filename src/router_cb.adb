@@ -39,10 +39,9 @@ package body Router_Cb is
             Start_Time : Time := Clock;
             Diff_Time  : Duration;
          begin
-            JFractal.Calculate_Image (C      => Compose_From_Cartesian (Re => 0.0,
-                                                                        Im => Float (Frame_Counter) / 10.0),
+            
+            JFractal.Calculate_Image (Esc    => Float (JFractal.Get_Frame),
                                       Buffer => RawData);
-            Frame_Counter := Frame_Counter + 1;
 
             Diff_Time := Clock - Start_Time;
             

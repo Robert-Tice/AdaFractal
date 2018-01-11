@@ -2,25 +2,35 @@ with Ada.Streams; use Ada.Streams;
 
 with Image_Types; use Image_Types;
 
-package body Julia_Set is 
+package body Julia_Set is
    
    procedure Calculate_Pixel (Self : Julia_Fractal;
-                              C    : Complex;
+                              Esc  : Float;
                               X    : ImgWidth;
                               Y    : ImgHeight;
                               Px   : out Pixel)
    is
       Z : Complex := Self.Get_Coordinate (X => X - 1,
                                           Y => Y - 1);
-      N : Color := Color'Last;
+      Zo : Complex := Z;
+      N  : Color := Color'Last;
+      
+      Iters : Natural := Max_Iterations;
    begin
-      while abs (Z) < 10.0 and N >= 5 loop
-         Z := Z * Z + C;
-         N := N - 5;
+      for I in 1 .. Max_Iterations loop
+         if abs (Z) >= 10.0 then
+            Iters := I;
+            exit;
+         end if;
+         
+         Z := Z ** 2 + Zo;
       end loop;
       
-      Px := Pixel'(Alpha => Color'Last,
-                   others => N);
-   end Calculate_Pixel;
+      
+      Self.Calculate_Pixel_Color (Z_Mod  => abs (Z),
+                                  Iters  => Iters,
+                                  Px     => Px);
+      end Calculate_Pixel;
+         
    
 end Julia_Set;
