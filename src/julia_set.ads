@@ -1,16 +1,22 @@
+with Ada.Numerics.Complex_Types; use Ada.Numerics.Complex_Types;
 with Ada.Streams; use Ada.Streams;
 
 with AWS.Utils; use AWS.Utils;
 
-package Julia_Set is   
+with Fractal; use Fractal;
+with Image_Types; use Image_Types;
+
+package Julia_Set is
    
-   procedure Get_Next_Img (C_Img : Float;
-                           Width : Natural;
-                           Height : Natural;
-                           Raw   : out Stream_Element_Array_Access);
- 
-private   
-   type I_Coords is array (Natural range <>) of Float;
-   type R_Coords is array (Natural range <>) of Float;
+   type Julia_Fractal is new Abstract_Fractal with null record;
+   
+private
+   
+   procedure Calculate_Pixel (Self : Julia_Fractal; 
+                              C    : Complex;
+                              X    : ImgWidth;
+                              Y    : ImgHeight;
+                              Px   : out Pixel);
+   
    
 end Julia_Set;

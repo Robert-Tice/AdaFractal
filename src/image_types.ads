@@ -1,4 +1,9 @@
 package Image_Types is
+   
+   subtype ImgWidth is Positive range 1 .. 1920;
+   subtype ImgHeight is Positive range 1 .. 1080;
+   
+   Pixel_Size : constant := 4;  --  bytes
 
    type Color is new Natural range 0 .. 255
      with Size => 8;
@@ -8,7 +13,8 @@ package Image_Types is
       Green : Color;
       Blue  : Color;
       Alpha : Color;
-   end record;
+   end record
+     with Size => 32;
    
    for Pixel use record
       Red at 0 range 0 .. 7;
@@ -18,9 +24,10 @@ package Image_Types is
    end record;
    
    type Pixel_Array is array 
-     (Natural range <>, 
-      Natural range <>) of Pixel
+     (Natural range <>) of Pixel
      with Pack;
+   
+   type Pixel_Array_Ptr is access all Pixel_Array;
       
 
 end Image_Types;

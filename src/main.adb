@@ -9,6 +9,9 @@ procedure Main
 is
    WS : AWS.Server.HTTP;
 begin
+   Router_Cb.Initialize_Fractals;
+
+
    Ada.Text_IO.Put_Line
      ("Serving on 127.0.0.1:" & Positive'Image (AWS.Default.Server_Port));
 

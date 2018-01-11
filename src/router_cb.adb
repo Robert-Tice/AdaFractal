@@ -3,6 +3,7 @@ with Image_Types; use Image_Types;
 
 with Ada.Calendar; use Ada.Calendar;
 with Ada.Exceptions; use Ada.Exceptions;
+with Ada.Numerics.Complex_Types; use Ada.Numerics.Complex_Types;
 with Ada.Streams; use Ada.Streams;
 with Ada.Text_IO; use Ada.Text_IO;
 
@@ -11,40 +12,56 @@ with AWS.Messages;
 with AWS.Resources.Streams.Memory;
 with AWS.Utils;
 
+with Fractal;
+
 package body Router_Cb is
+   
+   procedure Initialize_Fractals
+   is
+   begin
+      Fractal.Initialize (Frct_Ptr => JFractal'Access);
+   end Initialize_Fractals;
    
    function Router (Request : AWS.Status.Data) return AWS.Response.Data
    is      
       URI      : constant String := AWS.Status.URI (Request);
       Filename : constant String := "web/" & URI (2 .. URI'Last);
    begin
---      Put_Line ("URI: " & URI);
+      Put_Line ("URI: " & URI);
       
       if URI = "/" then
          --  main page
          return AWS.Response.File (AWS.MIME.Text_HTML, "web/html/index.html");
-      elsif URI'Length > 9 and then
-        URI (URI'First .. URI'First + 8) = "/fractal|" then
+      elsif URI = "/fractal" then
          --  get new image and send it back to client 
          
-         declare
-            BufferSize : Stream_Element_Offset;
-            
+         declare            
             Start_Time : Time := Clock;
             Diff_Time  : Duration;
          begin
-            BufferSize := Fractal_Parse (URI => URI (URI'First + 9 .. URI'Last));
+            JFractal.Calculate_Image (C      => Compose_From_Cartesian (Re => 0.0,
+                                                                        Im => Float (Frame_Counter) / 10.0),
+                                      Buffer => RawData);
+            Frame_Counter := Frame_Counter + 1;
 
             Diff_Time := Clock - Start_Time;
             
-            Put_Line ("Time:" & Duration'Image (Diff_Time));
+            Put_Line ("Time:" & Duration'Image (Diff_Time));            
+            
             return AWS.Response.Build (Content_Type  => AWS.MIME.Application_Octet_Stream,
-                                       Message_Body  => RawData (1 .. BufferSize));
+                                       Message_Body  => RawData 
+                                         (RawData'First .. 
+                                            RawData'First + JFractal.Get_Buffer_Size));
          end;
       elsif URI = "/quit" then
          Router_Cb.Server_Alive := False;
          Put_Line ("quitting...");
-         return AWS.Response.File (AWS.MIME.Text_Plain, "quitting...");
+         return AWS.Response.Build (AWS.MIME.Text_HTML, "quitting...");
+      elsif URI'Length > 8 and then 
+        URI (URI'First .. URI'First + 7) = "/window|" then
+         ImgSize_Parse (URI => URI (URI'First + 8 .. URI'Last));
+         
+         return AWS.Response.Build (AWS.MIME.Text_HTML, "Success");
       elsif AWS.Utils.Is_Regular_File (Filename) then
          return AWS.Response.File
            (Content_Type => AWS.MIME.Content_Type (Filename),
@@ -59,16 +76,14 @@ package body Router_Cb is
 
    end Router;
    
-   function Fractal_Parse (URI : String) return Stream_Element_Offset
+   procedure ImgSize_Parse (URI : String)
    is            
       Width, Height : Natural;
       QPos   : Integer := (-1);
-            
-      BufferSize    : Stream_Element_Offset;
       
       Invalid_Get : exception;
    begin
-      --           Put_Line ("RawStr: " & RawStr);
+      Put_Line ("RawStr: " & URI);
             
       for I in URI'Range loop
          if URI (I) = '|' then
@@ -84,28 +99,18 @@ package body Router_Cb is
       Width := Natural'Value (URI (URI'First .. QPos - 1));
       Height := Natural'Value (URI (QPos + 1 .. URI'Last));
             
-      if Width > Max_Width then
-         Width := Max_Width;
+      if Width > ImgWidth'Last then
+         Width := ImgWidth'Last;
       end if;
-      if Height > Max_Height then
-         Height := Max_Height;
+      if Height > ImgHeight'Last then
+         Height := ImgHeight'Last;
       end if;
             
-      BufferSize := Stream_Element_Offset (Width) *
-        Stream_Element_Offset (Height) *
-        Stream_Element_Offset (Pixel'Size / 8);
+      JFractal.Set_Size (Width  => Width,
+                         Height => Height);
             
-      --            Put_Line ("Width:" & Width'Img & " Height:" & Height'Img);
-            
+      Put_Line ("Width:" & Width'Img & " Height:" & Height'Img);
            
-      Get_Next_Img (C_Img  => Float (Frame_Counter) / 100.0,
-                    Width  => Width,
-                    Height => Height,
-                    Raw    => RawData);
-      Frame_Counter := Frame_Counter + 1;
-      
-      return BufferSize;
-   end Fractal_Parse;
-      
+   end ImgSize_Parse;      
 
 end Router_Cb;
