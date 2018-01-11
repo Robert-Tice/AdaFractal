@@ -7,7 +7,7 @@ $(window).resize(function () {
     changeSize();
 });
 
-var intv = setInterval(update_fractal, 330);
+var intv = setInterval(update_fractal, 33);
 
 function update_fractal() {
     var oReq = new XMLHttpRequest();

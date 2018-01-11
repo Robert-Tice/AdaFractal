@@ -18,16 +18,17 @@ package body Julia_Set is
       Iters : Natural := Max_Iterations;
    begin
       for I in 1 .. Max_Iterations loop
-         if abs (Z) >= 10.0 then
+         if (Z.Re * Z.Re + Z.Im * Z.Im) >= 100.0 Then
+--         if abs (Z) >= 10.0 then
             Iters := I;
             exit;
          end if;
          
-         Z := Z ** 2 + Zo;
+         Z := Z * Z + Zo;
       end loop;
       
       
-      Self.Calculate_Pixel_Color (Z_Mod  => abs (Z),
+      Self.Calculate_Pixel_Color (Z_Mod  => (Z.Re * Z.Re + Z.Im * Z.Im),
                                   Iters  => Iters,
                                   Px     => Px);
       end Calculate_Pixel;

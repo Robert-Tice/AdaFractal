@@ -67,7 +67,6 @@ project Adafractal is
             case Aws_Build is
 
                when "static" =>
-                  for Switches ("ada") use ("-E");
 
                when "relocatable" =>
 

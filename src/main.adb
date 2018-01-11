@@ -1,3 +1,4 @@
+with Ada.Real_Time;
 with Ada.Text_IO;
 
 with AWS.Default;
@@ -21,7 +22,7 @@ begin
                      Callback       => Router_Cb.Router'Access);
 
    while Router_Cb.Server_Alive loop
-      null;
+      delay until Ada.Real_Time.Time_Last;
    end loop;
 
    AWS.Server.Shutdown (WS);

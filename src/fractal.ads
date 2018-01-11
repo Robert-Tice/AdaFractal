@@ -26,7 +26,7 @@ package Fractal is
                             Y    : Natural) 
                             return Complex;
    
-   procedure Calculate_Image (Self   : Abstract_Fractal;
+   procedure Calculate_Image (Self   : in out Abstract_Fractal;
                               Esc    : Float;
                               Buffer : out Stream_Element_Array_Access);
    
@@ -51,28 +51,23 @@ private
    Real_Max : constant := 2.0;
    Real_Min : constant := (-1) * Real_Max;
    
-   protected type Row_Counter (Max : Integer) 
+   protected type Pool_Sync 
    is
-      procedure Get_Row (Row  : out Integer);
       procedure Finished;
-      
       entry Wait_For_Complete;
-   private
-      Cur_Row : ImgHeight := ImgHeight'First;
-      
+   private      
       Complete_Tasks : Natural := 0;
-   end Row_Counter;
+   end Pool_Sync;
    
-   type Row_Counter_Ptr is access all Row_Counter;
-   
-   task type Row_Task is
+   task type Chunk_Task is
       entry Initialize (F : Abstract_Fractal_Ptr);
-      entry Go (Cntr  : Row_Counter_Ptr;
-                E     : Float; 
-                Buf   : Stream_Element_Array_Access);
-   end Row_Task;
+      entry Go (Start_Row  : Natural;
+                Stop_Row   : Natural;
+                E      : Float; 
+                Buf    : Stream_Element_Array_Access);
+   end Chunk_Task;
    
-   type Row_Task_Pool is array (Natural range <>) of Row_Task;
+   type Chunk_Task_Pool is array (Natural range <>) of Chunk_Task;
    
    Task_Pool_Size : constant := 4;
    
@@ -86,9 +81,9 @@ private
       Imag_Min : Float;
       Imag_Step : Float;
       
-      Task_Pool : Row_Task_Pool (1 .. Task_Pool_Size);
+      Task_Pool : Chunk_Task_Pool (1 .. Task_Pool_Size);
       
-      Cntr_Object : Row_Counter_Ptr;
+      Sync_Obj : Pool_Sync;
       
       Frame_Counter : Color := Color'First;
       Cnt_Up : Boolean := True;

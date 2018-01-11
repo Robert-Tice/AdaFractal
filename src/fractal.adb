@@ -1,7 +1,5 @@
 with Ada.Exceptions;
 
-with Ada.Unchecked_Conversion;
-with Ada.Unchecked_Deallocation;
 with Ada.Text_IO; use Ada.Text_IO;
 
 with GNAT.OS_Lib;
@@ -25,8 +23,6 @@ package body Fractal is
                        Width  : ImgWidth;
                        Height : ImgHeight)
    is
-      procedure Free is new Ada.Unchecked_Deallocation (Row_Counter,
-                                                        Row_Counter_Ptr);
    begin
       Self.Width := Width;
       Self.Height := Height;
@@ -34,11 +30,6 @@ package body Fractal is
       Self.Calculate_Imaginary_Bounds;
       Self.Calculate_Step;
       
-      if Self.Cntr_Object /= null then
-         Free (Self.Cntr_Object);
-      end if;
-      
-      Self.Cntr_Object := new Row_Counter (Max => Self.Height);
    end Set_Size;
    
    function Get_Coordinate (Self : Abstract_Fractal;
@@ -69,19 +60,26 @@ package body Fractal is
       Self.Imag_Step := (Self.Imag_Max - Self.Imag_Min) / Float (Self.Height);
    end Calculate_Step;
    
-   procedure Calculate_Image (Self : Abstract_Fractal;
+   procedure Calculate_Image (Self : in out Abstract_Fractal;
                               Esc  : Float;
                               Buffer : out Stream_Element_Array_Access)
    is
+      Chunk_Size : Natural := Self.Height / Task_Pool_Size;
    begin     
       
-      for I in Self.Task_Pool'Range loop
-         Self.Task_Pool (I).Go (Cntr  => Self.Cntr_Object,
-                                E     => Esc,
-                                Buf   => Buffer);
+      for I in Self.Task_Pool'First .. Self.Task_Pool'Last - 1 loop
+         Self.Task_Pool (I).Go (Start_Row => ImgHeight'First + (I - Self.Task_Pool'First) * Chunk_Size,
+                                Stop_Row  => I * Chunk_Size,
+                                E         => Esc,
+                                Buf       => Buffer);
       end loop;
+      Self.Task_Pool (Self.Task_Pool'Last).Go 
+        (Start_Row => ImgHeight'First + (Self.Task_Pool'Last - Self.Task_Pool'First) * Chunk_Size,
+         Stop_Row  => Self.Height,
+         E         => Esc,
+         Buf       => Buffer);
       
-      Self.Cntr_Object.Wait_For_Complete;
+      Self.Sync_Obj.Wait_For_Complete;
       
    exception
       when E : others =>
@@ -96,7 +94,7 @@ package body Fractal is
    is
       Value : Integer := 765 * (Iters - 1) / Max_Iterations;
    begin
-      if Z_Mod > 2.0 then
+      if Z_Mod > 4.0 then
          if Value > 510 then
             Px := Pixel'(Red   => Color'Last - Self.Frame_Counter,
                          Green => Color'Last,
@@ -162,18 +160,7 @@ package body Fractal is
       end loop;
    end Calculate_Row;
    
-   protected body Row_Counter is
-      
-      procedure Get_Row (Row  : out Integer)
-      is
-      begin         
-         if Cur_Row > Max then
-            Row := -1;
-         else
-            Row := Cur_Row;
-            Cur_Row := Cur_Row + 1;
-         end if;
-      end Get_Row;
+   protected body Pool_Sync is
       
       procedure Finished
       is
@@ -184,15 +171,14 @@ package body Fractal is
       entry Wait_For_Complete when Complete_Tasks = Task_Pool_Size is
       begin
          Complete_Tasks := 0;
-         Cur_Row := ImgHeight'First;
       end Wait_For_Complete;
       
-   end Row_Counter;
+   end Pool_Sync;
    
-   task body Row_Task
+   task body Chunk_Task
    is
-      Row     : Integer;
-      Counter : Row_Counter_Ptr;
+      Start   : Natural;
+      Stop    : Natural;
       Fct     : Abstract_Fractal_Ptr;
       Esc     : Float;
       Buffer  : Stream_Element_Array_Access;
@@ -202,26 +188,26 @@ package body Fractal is
       end Initialize;
       
       loop
-         accept Go (Cntr  : Row_Counter_Ptr;
-                    E     : Float;
-                    Buf   : Stream_Element_Array_Access) do
-            Counter := Cntr;
+         accept Go (Start_Row : Natural;
+                    Stop_Row  : Natural;
+                    E         : Float;
+                    Buf       : Stream_Element_Array_Access) do
+            Start := Start_Row;
+            Stop := Stop_Row;
             Esc := E;
             Buffer := Buf;
          end Go;
 
-         loop
-            Counter.Get_Row (Row);
-            exit when Row = -1;
+         for I in Start .. Stop loop
             
             Fct.Calculate_Row (Esc  => Esc,
-                               Y    => Row,
+                               Y    => I,
                                Idx  => Buffer'First + 
-                                 Stream_Element_Offset ((Row - 1) * Fct.Get_Width * Pixel'Size / 8),
+                                 Stream_Element_Offset ((I - 1) * Fct.Get_Width * Pixel'Size / 8),
                                Buffer => Buffer);
          end loop;
-         Fct.Cntr_Object.Finished;
+         Fct.Sync_Obj.Finished;
       end loop;
-   end Row_Task;  
+   end Chunk_Task;  
     
 end Fractal;
