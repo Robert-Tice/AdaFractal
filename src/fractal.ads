@@ -60,6 +60,7 @@ private
    end Pool_Sync;
    
    task type Chunk_Task is
+      pragma Priority (0);
       entry Initialize (F : Abstract_Fractal_Ptr);
       entry Go (Start_Row  : Natural;
                 Stop_Row   : Natural;
@@ -69,7 +70,7 @@ private
    
    type Chunk_Task_Pool is array (Natural range <>) of Chunk_Task;
    
-   Task_Pool_Size : constant := 4;
+   Task_Pool_Size : constant := 8;
    
    type Abstract_Fractal is abstract tagged limited record
       Width  : ImgWidth := ImgWidth'Last;
