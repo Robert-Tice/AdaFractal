@@ -6,12 +6,6 @@ project Adafractal is
    for Object_Dir use "obj";
    for Main use ("main.adb");
 
-   type Build_Kind is
-      ("static", "relocatable", "static-pic");
-   Xmlada_Build : Build_Kind := external ("XMLADA_BUILD");
-   type Build_Kind1 is
-      ("static", "default");
-   Aws_Build : Build_Kind1 := external ("AWS_BUILD");
    for Target use "aarch64-nto-qnx";
 
    package Compiler is
