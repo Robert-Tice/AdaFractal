@@ -6,10 +6,9 @@ project Adafractal is
    for Object_Dir use "obj";
    for Main use ("main.adb");
 
-   for Target use "aarch64-nto-qnx";
 
    package Compiler is
-      for Switches ("ada") use ("-gnatX", "-g", "-funroll-loops", "-gnatn", "-O2");
+      for Switches ("ada") use ("-g", "-funroll-loops", "-gnatp", "-O2", "-gnatn");
    end Compiler;
 
    package Builder is
@@ -18,7 +17,6 @@ project Adafractal is
 
    package Linker is
       for Switches ("ada") use ("-g");
-
    end Linker;
 
 end Adafractal;

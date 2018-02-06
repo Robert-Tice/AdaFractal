@@ -1,8 +1,6 @@
 with Ada.Real_Time;
 with Ada.Text_IO;
 
-with System.Multiprocessors;
-
 with AWS.Default;
 with AWS.Server;
 
@@ -11,7 +9,7 @@ with Router_Cb;
 procedure Main
 is
    WS : AWS.Server.HTTP;
-   Port : Natural := AWS.Default.Server_Port;
+   Port : constant Natural := AWS.Default.Server_Port;
 begin
    Router_Cb.Initialize_Fractals;
 
