@@ -1,6 +1,8 @@
 with Ada.Numerics.Complex_Types; use Ada.Numerics.Complex_Types;
 with Ada.Streams; use Ada.Streams;
 
+with System.Multiprocessors; use System.Multiprocessors;
+
 with AWS.Utils; use AWS.Utils;
 
 with Image_Types; use Image_Types;
@@ -70,7 +72,7 @@ private
    
    type Chunk_Task_Pool is array (Natural range <>) of Chunk_Task;
    
-   Task_Pool_Size : constant := 8;
+   Task_Pool_Size : constant := 64;
    
    type Abstract_Fractal is abstract tagged limited record
       Width  : ImgWidth := ImgWidth'Last;

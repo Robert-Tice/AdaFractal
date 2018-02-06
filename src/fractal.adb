@@ -9,8 +9,10 @@ package body Fractal is
    procedure Initialize (Frct_Ptr : Abstract_Fractal_Ptr)
    is
    begin
+      
       for I in Frct_Ptr.Task_Pool'Range loop
          Frct_Ptr.Task_Pool (I).Initialize (F => Frct_Ptr);
+         
       end loop;
       
       Frct_Ptr.Set_Size (Width  => ImgWidth'Last,

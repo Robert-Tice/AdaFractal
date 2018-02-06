@@ -1,13 +1,41 @@
 var canvas = document.getElementById('fractalCanvas');
 var ctx = canvas.getContext('2d');
 
-changeSize();
+var iMouseX, iMouseY = 1;
+var bMouseDown = false;
+var iZoomRadius = 150;
+var iZoomPower = 10;
 
-$(window).resize(function () {
-    changeSize();
-});
+function clear() { // clear canvas function
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+}
 
-var intv = setInterval(update_fractal, 33);
+function drawScene() { // main drawScene function
+
+    var imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+    var newCanvas = $("<canvas>")
+        .attr("width", imageData.width)
+        .attr("height", imageData.height)[0];
+
+    newCanvas.getContext("2d").putImageData(imageData, 0, 0);
+
+
+    clear(); // clear canvas
+    if (bMouseDown) { // drawing zoom area
+        ctx.drawImage(newCanvas, 0 - iMouseX * (iZoomPower - 1), 0 - iMouseY * (iZoomPower - 1), ctx.canvas.width * iZoomPower, ctx.canvas.height * iZoomPower);
+        ctx.globalCompositeOperation = 'destination-atop';
+        var oGrd = ctx.createRadialGradient(iMouseX, iMouseY, 0, iMouseX, iMouseY, iZoomRadius);
+        oGrd.addColorStop(0.8, "rgba(0, 0, 0, 1.0)");
+        oGrd.addColorStop(1.0, "rgba(0, 0, 0, 0.1)");
+        ctx.fillStyle = oGrd;
+        ctx.beginPath();
+        ctx.arc(iMouseX, iMouseY, iZoomRadius, 0, Math.PI*2, true);
+        ctx.closePath();
+        ctx.fill();
+    }
+    // draw source image
+    ctx.drawImage(newCanvas, 0, 0, ctx.canvas.width, ctx.canvas.height);
+}
 
 function update_fractal() {
     var oReq = new XMLHttpRequest();
@@ -30,6 +58,10 @@ function update_fractal() {
             }
 
             ctx.putImageData(imgData, 0, 0);
+
+            drawScene();
+
+            window.requestAnimationFrame(update_fractal);
         }
     };
 
@@ -40,7 +72,7 @@ function quitApp() {
     $.get("/quit", function (data) {
         $("#debug").text(data);
     });
-    clearInterval(intv);
+    window.cancelAnimationFrame();
 }
 
 function changeSize() {
@@ -58,3 +90,23 @@ function changeSize() {
             alert("Could not resize Ada canvas");
         });
 }
+
+changeSize();
+
+$(window).resize(function () {
+    changeSize();
+});
+
+window.requestAnimationFrame(update_fractal);
+
+$('#fractalCanvas').mousemove(function(e) { // mouse move handler
+    var canvasOffset = $(canvas).offset();
+    iMouseX = Math.floor(e.pageX - canvasOffset.left);
+    iMouseY = Math.floor(e.pageY - canvasOffset.top);
+});
+$('#fractalCanvas').mousedown(function(e) { // binding mousedown event
+    bMouseDown = true;
+});
+$('#fractalCanvas').mouseup(function(e) { // binding mouseup event
+    bMouseDown = false;
+});
