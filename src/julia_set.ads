@@ -1,16 +1,16 @@
-with Fractal; use Fractal;
+with Computation_Type;
 with Image_Types; use Image_Types;
 
+generic
+   with package CT is new Computation_Type (<>);
+   Escape_Threshold : CT.Real;
 package Julia_Set is
+   use CT;
 
-   type Julia_Fractal is new Abstract_Fractal with null record;
-
-private
-
-   procedure Calculate_Pixel (Self : Julia_Fractal;
-                              Esc  : Complex_Type;
-                              X    : ImgWidth;
-                              Y    : ImgHeight;
-                              Px   : out Pixel);
+   procedure Calculate_Pixel (Esc         : Real;
+                              Re          : Real;
+                              Im          : Real;
+                              Z_Escape    : out Real;
+                              Iter_Escape : out Natural);
 
 end Julia_Set;

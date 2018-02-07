@@ -1,46 +1,17 @@
 var canvas = document.getElementById('fractalCanvas');
 var ctx = canvas.getContext('2d');
 
-var iMouseX, iMouseY = 1;
-var bMouseDown = false;
-var iZoomRadius = 150;
-var iZoomPower = 10;
+var zoom = 10;
 
-function clear() { // clear canvas function
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-}
+var zoomMax = 1000;
+var zoomMin = 10;
 
-function drawScene() { // main drawScene function
-
-    var imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
-    var newCanvas = $("<canvas>")
-        .attr("width", imageData.width)
-        .attr("height", imageData.height)[0];
-
-    newCanvas.getContext("2d").putImageData(imageData, 0, 0);
-
-
-    clear(); // clear canvas
-    if (bMouseDown) { // drawing zoom area
-        ctx.drawImage(newCanvas, 0 - iMouseX * (iZoomPower - 1), 0 - iMouseY * (iZoomPower - 1), ctx.canvas.width * iZoomPower, ctx.canvas.height * iZoomPower);
-        ctx.globalCompositeOperation = 'destination-atop';
-        var oGrd = ctx.createRadialGradient(iMouseX, iMouseY, 0, iMouseX, iMouseY, iZoomRadius);
-        oGrd.addColorStop(0.8, "rgba(0, 0, 0, 1.0)");
-        oGrd.addColorStop(1.0, "rgba(0, 0, 0, 0.1)");
-        ctx.fillStyle = oGrd;
-        ctx.beginPath();
-        ctx.arc(iMouseX, iMouseY, iZoomRadius, 0, Math.PI*2, true);
-        ctx.closePath();
-        ctx.fill();
-    }
-    // draw source image
-    ctx.drawImage(newCanvas, 0, 0, ctx.canvas.width, ctx.canvas.height);
-}
+var fractal_type = "fixed_fractal"
 
 function update_fractal() {
     var oReq = new XMLHttpRequest();
 
-    urlStr = "/fractal";
+    urlStr = "/" + fractal_type;
 
     oReq.open("GET", urlStr, true);
     oReq.responseType = "arraybuffer";
@@ -59,8 +30,6 @@ function update_fractal() {
 
             ctx.putImageData(imgData, 0, 0);
 
-            drawScene();
-
             window.requestAnimationFrame(update_fractal);
         }
     };
@@ -75,14 +44,19 @@ function quitApp() {
     window.cancelAnimationFrame();
 }
 
-function changeSize() {
-    width = $(window).width();
-    height = $(window).height();
+function changeSize(zm, mx, my) {
+    width = Math.floor( $(window).width() );
+    height = Math.floor( $(window).height() );
 
     ctx.canvas.width = width;
     ctx.canvas.height = height;
+    
+    if(mx == 0)
+        mx = width / 2;
+    if(my == 0)
+        my = height / 2;
 
-    var getStr = "/window|" + width + "|" + height;
+    var getStr = "/window|" + width + "|" + height + "|" + zm + "|" + mx + "|" + my;
     $.get(getStr, function () {
 
         })
@@ -91,22 +65,46 @@ function changeSize() {
         });
 }
 
-changeSize();
+function change_zoom(amount) {
+    zoom += amount;
+
+    if(zoom < zoomMin)
+        zoom = zoomMin;
+    else if(zoom > zoomMax)
+        zoom = zoomMax;
+}
+
+changeSize(zoom, 0, 0);
 
 $(window).resize(function () {
-    changeSize();
+    zoom = 1;
+    changeSize(zoom, 0, 0);
+});
+
+$('#fractalCanvas').mousewheel(function(event) {
+    change_zoom(event.deltaY);
+    changeSize(zoom, event.pageX, event.pageY);
+});
+
+$('#fractalCanvas').click(function(event) {
+    if(event.shiftKey)
+        change_zoom(-20);
+    else
+        change_zoom(20);
+    event.preventDefault();
+    changeSize(zoom, event.pageX, event.pageY);
+});
+
+$('#fixed_mandlebrot').click(function() {
+    fractal_type = "fixed_fractal";
+    $('#float_mandlebrot').removeClass('active');
+    $('#fixed_mandlebrot').addClass('active');
+});
+                             
+$('#float_mandlebrot').click(function() {
+    fractal_type = "float_fractal";
+    $('#fixed_mandlebrot').removeClass('active');
+    $('#float_mandlebrot').addClass('active');
 });
 
 window.requestAnimationFrame(update_fractal);
-
-$('#fractalCanvas').mousemove(function(e) { // mouse move handler
-    var canvasOffset = $(canvas).offset();
-    iMouseX = Math.floor(e.pageX - canvasOffset.left);
-    iMouseY = Math.floor(e.pageY - canvasOffset.top);
-});
-$('#fractalCanvas').mousedown(function(e) { // binding mousedown event
-    bMouseDown = true;
-});
-$('#fractalCanvas').mouseup(function(e) { // binding mouseup event
-    bMouseDown = false;
-});

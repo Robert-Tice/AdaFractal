@@ -11,7 +11,6 @@ is
    WS : AWS.Server.HTTP;
    Port : constant Natural := AWS.Default.Server_Port;
 begin
-   Router_Cb.Initialize_Fractals;
 
    Ada.Text_IO.Put_Line
      ("Serving on 127.0.0.1:" & Port'Img);

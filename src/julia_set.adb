@@ -1,40 +1,36 @@
 package body Julia_Set is
 
-
-
-   procedure Calculate_Pixel (Self : Julia_Fractal;
-                              Esc  : Complex_Type;
-                              X    : ImgWidth;
-                              Y    : ImgHeight;
-                              Px   : out Pixel)
+   procedure Calculate_Pixel (Esc         : Real;
+                              Re          : Real;
+                              Im          : Real;
+                              Z_Escape    : out Real;
+                              Iter_Escape : out Natural)
    is
       pragma Unreferenced (Esc);
-      Z : Complex_Coordinate := Self.Get_Coordinate (X => X - 1,
-                                                     Y => Y - 1);
-      Zo : constant Complex_Coordinate := Z;
-      N  : Color := Color'Last;
 
-      Iters : Natural := Max_Iterations;
+      Re_Mod : Real := Re;
+      Im_Mod : Real := Im;
    begin
+
       for I in 1 .. Max_Iterations loop
          declare
-            ReS : constant Complex_Type := Z.Re * Z.Re;
-            ImS : constant Complex_Type := Z.Im * Z.Im;
+            ReS : constant Real := Re_Mod * Re_Mod;
+            ImS : constant Real := Im_Mod * Im_Mod;
          begin
-            if (ReS + ImS) >= 100.0 then
-               Iters := I;
-               exit;
+            if (ReS + ImS) >= Escape_Threshold then
+               Iter_Escape := I;
+               Z_Escape := ReS + ImS;
+               return;
             end if;
 
-            Z.Im := (Complex_Type (2.0 * Z.Re) * Z.Im) + Zo.Im;
-            Z.Re := (ReS - ImS) + Zo.Re;
+            Im_Mod := (To_Real (2) * Re_Mod * Im_Mod) + Im;
+            Re_Mod := (ReS - ImS) + Re;
          end;
       end loop;
 
+      Iter_Escape := Max_Iterations;
+      Z_Escape := Re_Mod * Re_Mod + Im_Mod * Im_Mod;
 
-      Self.Calculate_Pixel_Color (Z_Mod  => (Z.Re * Z.Re + Z.Im * Z.Im),
-                                  Iters  => Iters,
-                                  Px     => Px);
    end Calculate_Pixel;
 
 

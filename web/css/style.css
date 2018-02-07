@@ -4,10 +4,40 @@ html, body {
     margin: 0px;
     border: 0;
     display: block;
+    font: 1.0em "Fira Sans", sans-serif;
 }
 
 canvas {
     position: absolute;
     left: 0px;
     top 0px;
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #333;
+}
+
+li {
+    float: left;
+}
+
+li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+/* Change the link color to #111 (black) on hover */
+li a:hover {
+    background-color: #111;
+}
+
+.active {
+    background-color: #4CAF50;
 }

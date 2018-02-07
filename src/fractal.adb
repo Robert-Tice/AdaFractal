@@ -6,88 +6,81 @@ with GNAT.OS_Lib;
 
 package body Fractal is
 
-   procedure Initialize (Frct_Ptr : Abstract_Fractal_Ptr)
+   procedure Set_Size (Width  : ImgWidth;
+                       Height : ImgHeight;
+                       Zoom   : ImgZoom;
+                       MouseX : ImgWidth;
+                       MouseY : ImgHeight)
    is
    begin
+      S_Width := Width;
+      S_Height := Height;
+      S_Zoom := Zoom;
 
-      for I in Frct_Ptr.Task_Pool'Range loop
-         Frct_Ptr.Task_Pool (I).Initialize (F => Frct_Ptr);
+      S_Center := Get_Coordinate (X => MouseX,
+                                  Y => MouseY);
 
-      end loop;
-
-      Frct_Ptr.Set_Size (Width  => ImgWidth'Last,
-                         Height => ImgHeight'Last);
-
-   end Initialize;
-
-   procedure Set_Size (Self   : in out Abstract_Fractal;
-                       Width  : ImgWidth;
-                       Height : ImgHeight)
-   is
-   begin
-      Self.Width := Width;
-      Self.Height := Height;
-
-      Self.Calculate_Imaginary_Bounds;
-      Self.Calculate_Step;
-
+      Calculate_Bounds;
+      Calculate_Step;
    end Set_Size;
 
-   function Get_Coordinate (Self : Abstract_Fractal;
-                            X    : Natural;
-                            Y    : Natural)
+   function Get_Coordinate (X : ImgWidth;
+                            Y : ImgHeight)
                             return Complex_Coordinate
    is
-      Real_Coord : constant Complex_Type :=
-        Real_Min + (Complex_Type (X) * Self.Real_Step);
-
-      Imag_Coord : constant Complex_Type :=
-        Self.Imag_Min + (Complex_Type (Y) * Self.Imag_Step);
+      Real_Coord : constant Real := S_Real_Min + To_Real (X) * S_Real_Step;
+      Imag_Coord : constant Real := S_Imag_Min + To_Real (Y) * S_Imag_Step;
    begin
       return Complex_Coordinate'(Re => Real_Coord,
                                  Im => Imag_Coord);
    end Get_Coordinate;
 
-   procedure Calculate_Imaginary_Bounds (Self : in out Abstract_Fractal)
+   procedure Calculate_Bounds
    is
-      Inv_Aspect_Ratio : constant Complex_Type := Complex_Type (Self.Height) /
-        Complex_Type (Self.Width);
+      Half_Real_Dist, Half_Imag_Dist : Real;
+
+      Inv_Aspect_Ratio               : constant Real := To_Real (S_Height) /
+                                         To_Real (S_Width);
    begin
-      Self.Imag_Max := Inv_Aspect_Ratio *
-        Complex_Type ((Real_Max - Real_Min) / 2.0);
+      Half_Real_Dist := Real_Distance_Unzoomed * To_Real (10) /
+        (To_Real (S_Zoom) * To_Real (2));
+      Half_Imag_Dist := Inv_Aspect_Ratio * Half_Real_Dist;
 
-      Self.Imag_Min := (-1.0) * Self.Imag_Max;
-   end Calculate_Imaginary_Bounds;
+      S_Real_Max := Half_Real_Dist + S_Center.Re;
+      S_Real_Min := S_Center.Re - Half_Real_Dist;
 
-   procedure Calculate_Step (Self : in out Abstract_Fractal)
+      S_Imag_Max := Half_Imag_Dist + S_Center.Im;
+      S_Imag_Min := S_Center.Im - Half_Imag_Dist;
+   end Calculate_Bounds;
+
+   procedure Calculate_Step
    is
    begin
-      Self.Real_Step := (Real_Max - Real_Min) / Complex_Type (Self.Width);
-      Self.Imag_Step := (Self.Imag_Max - Self.Imag_Min) / Complex_Type (Self.Height);
+      S_Real_Step := (S_Real_Max - S_Real_Min) / To_Real (S_Width);
+      S_Imag_Step := (S_Imag_Max - S_Imag_Min) / To_Real (S_Height);
    end Calculate_Step;
 
-   procedure Calculate_Image (Self : in out Abstract_Fractal;
-                              Esc  : Complex_Type;
+   procedure Calculate_Image (Esc    : Real;
                               Buffer : out Stream_Element_Array_Access)
    is
-      Chunk_Size : constant Natural := Self.Height / Task_Pool_Size;
+      Chunk_Size : constant Natural := S_Height / Task_Pool_Size;
    begin
 
-      for I in Self.Task_Pool'First .. Self.Task_Pool'Last - 1 loop
-         Self.Task_Pool (I).Go (Start_Row => ImgHeight'First +
-                                (I - Self.Task_Pool'First) * Chunk_Size,
+      for I in S_Task_Pool'First .. S_Task_Pool'Last - 1 loop
+         S_Task_Pool (I).Go (Start_Row => ImgHeight'First +
+                                (I - S_Task_Pool'First) * Chunk_Size,
                                 Stop_Row  => I * Chunk_Size,
                                 E         => Esc,
                                 Buf       => Buffer);
       end loop;
-      Self.Task_Pool (Self.Task_Pool'Last).Go
+      S_Task_Pool (S_Task_Pool'Last).Go
         (Start_Row => ImgHeight'First +
-           (Self.Task_Pool'Last - Self.Task_Pool'First) * Chunk_Size,
-         Stop_Row  => Self.Height,
+           (S_Task_Pool'Last - S_Task_Pool'First) * Chunk_Size,
+         Stop_Row  => S_Height,
          E         => Esc,
          Buf       => Buffer);
 
-      Self.Sync_Obj.Wait_For_Complete;
+      S_Sync_Obj.Wait_For_Complete;
 
    exception
       when E : others =>
@@ -95,76 +88,85 @@ package body Fractal is
          GNAT.OS_Lib.OS_Exit (-1);
    end Calculate_Image;
 
-   procedure Calculate_Pixel_Color (Self  : Abstract_Fractal;
-                                    Z_Mod : Complex_Type;
-                                    Iters  : Natural;
-                                    Px    : out Pixel)
+   procedure Calculate_Pixel_Color (Z_Escape     : Real;
+                                    Iter_Escape  : Natural;
+                                    Px           : out Pixel)
    is
-      Value : constant Integer := 765 * (Iters - 1) / Max_Iterations;
+      Value : constant Integer := 765 * (Iter_Escape - 1) / Max_Iterations;
    begin
-      if Z_Mod > 4.0 then
+      if Z_Escape > To_Real (4) then
          if Value > 510 then
-            Px := Pixel'(Red   => Color'Last - Self.Frame_Counter,
+            Px := Pixel'(Red   => Color'Last - S_Frame_Counter,
                          Green => Color'Last,
                          Blue  => Color (Value rem Integer (Color'Last)),
                          Alpha => Color'Last);
          elsif Value > 255 then
-            Px := Pixel'(Red   => Color'Last - Self.Frame_Counter,
+            Px := Pixel'(Red   => Color'Last - S_Frame_Counter,
                          Green => Color (Value rem Integer (Color'Last)),
-                         Blue  => Color'First + Self.Frame_Counter,
+                         Blue  => Color'First + S_Frame_Counter,
                          Alpha => Color'Last);
          else
             Px := Pixel'(Red   => Color (Value rem Integer (Color'Last)),
-                         Green => Color'First + Self.Frame_Counter,
+                         Green => Color'First + S_Frame_Counter,
                          Blue  => Color'First,
                          Alpha => Color'Last);
          end if;
       else
-         Px := Pixel'(Red   => Color'First + Self.Frame_Counter,
-                      Green => Color'First + Self.Frame_Counter,
-                      Blue  => Color'First + Self.Frame_Counter,
+         Px := Pixel'(Red   => Color'First + S_Frame_Counter,
+                      Green => Color'First + S_Frame_Counter,
+                      Blue  => Color'First + S_Frame_Counter,
                       Alpha => Color'Last);
       end if;
 
    end Calculate_Pixel_Color;
 
-   function Get_Frame (Self : in out Abstract_Fractal) return Color
+   function Get_Frame return Color
    is
    begin
-      if Self.Cnt_Up then
-         if Self.Frame_Counter = Color'Last then
-            Self.Cnt_Up := not Self.Cnt_Up;
-            return Self.Frame_Counter;
+      if S_Cnt_Up then
+         if S_Frame_Counter = Color'Last then
+            S_Cnt_Up := not S_Cnt_Up;
+            return S_Frame_Counter;
          else
-            Self.Frame_Counter := Self.Frame_Counter + 5;
-            return (Self.Frame_Counter - 5);
+            S_Frame_Counter := S_Frame_Counter + 5;
+            return (S_Frame_Counter - 5);
          end if;
       end if;
 
-      if Self.Frame_Counter = Color'First then
-         Self.Cnt_Up := not Self.Cnt_Up;
-         return Self.Frame_Counter;
+      if S_Frame_Counter = Color'First then
+         S_Cnt_Up := not S_Cnt_Up;
+         return S_Frame_Counter;
       end if;
 
-      Self.Frame_Counter := Self.Frame_Counter - 5;
-      return (Self.Frame_Counter + 5);
+      S_Frame_Counter := S_Frame_Counter - 5;
+      return (S_Frame_Counter + 5);
 
    end Get_Frame;
 
-   procedure Calculate_Row (Self : Abstract_Fractal;
-                            Esc  : Complex_Type;
+   procedure Calculate_Row (Esc  : Real;
                             Y    : ImgHeight;
                             Idx  : Stream_Element_Offset;
                             Buffer : out not null Stream_Element_Array_Access)
    is
-      Line : Pixel_Array (1 .. Self.Get_Width)
+      Line : Pixel_Array (1 .. Get_Width)
         with Address => Buffer (Idx)'Address;
+
+      Coord : Complex_Coordinate;
+
+      Z_Esc : Real;
+      I_Esc : Natural;
    begin
       for X in Line'Range loop
-         Abstract_Fractal'Class (Self).Calculate_Pixel (Esc  => Esc,
-                                                        X    => X,
-                                                        Y    => Y,
-                                                        Px   => Line (X));
+         Coord := Get_Coordinate (X => X,
+                                  Y => Y);
+         Calculate_Pixel (Esc         => Esc,
+                          Re          => Coord.Re,
+                          Im          => Coord.Im,
+                          Z_Escape    => Z_Esc,
+                          Iter_Escape => I_Esc);
+         Calculate_Pixel_Color (Z_Escape    => Z_Esc,
+                                Iter_Escape => I_Esc,
+                                Px          => Line (X));
       end loop;
    end Calculate_Row;
 
@@ -187,18 +189,14 @@ package body Fractal is
    is
       Start   : Natural;
       Stop    : Natural;
-      Fct     : Abstract_Fractal_Ptr;
-      Esc     : Complex_Type;
+      Esc     : Real;
       Buffer  : Stream_Element_Array_Access;
    begin
-      accept Initialize (F : Abstract_Fractal_Ptr) do
-         Fct := F;
-      end Initialize;
 
       loop
          accept Go (Start_Row : Natural;
                     Stop_Row  : Natural;
-                    E         : Complex_Type;
+                    E         : Real;
                     Buf       : Stream_Element_Array_Access) do
             Start := Start_Row;
             Stop := Stop_Row;
@@ -208,14 +206,14 @@ package body Fractal is
 
          for I in Start .. Stop loop
 
-            Fct.Calculate_Row (Esc  => Esc,
-                               Y    => I,
-                               Idx  => Buffer'First +
-                                 Stream_Element_Offset ((I - 1) *
-                                       Fct.Get_Width * Pixel'Size / 8),
-                               Buffer => Buffer);
+            Calculate_Row (Esc    => Esc,
+                           Y      => I,
+                           Idx    => Buffer'First +
+                             Stream_Element_Offset ((I - 1) *
+                                   Get_Width * Pixel'Size / 8),
+                           Buffer => Buffer);
          end loop;
-         Fct.Sync_Obj.Finished;
+         S_Sync_Obj.Finished;
       end loop;
    end Chunk_Task;
 
