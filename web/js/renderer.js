@@ -1,10 +1,5 @@
-var canvas = document.getElementById('fractalCanvas');
-var ctx = canvas.getContext('2d');
-
-var zoom = 10;
-
-var zoomMax = 1000;
-var zoomMin = 10;
+var canvas = document.getElementById( 'fractalCanvas' );
+var ctx = canvas.getContext( '2d' );
 
 var fractal_type = "fixed_fractal"
 
@@ -13,12 +8,12 @@ function update_fractal() {
 
     urlStr = "/" + fractal_type;
 
-    oReq.open("GET", urlStr, true);
+    oReq.open( "GET", urlStr, true );
     oReq.responseType = "arraybuffer";
 
-    oReq.onload = function (oEvent) {
+    oReq.onload = function ( oEvent ) {
         var arrayBuffer = oReq.response; // Note: not oReq.responseText
-        if (arrayBuffer) {
+        if ( arrayBuffer ) {
             var byteArray = new Uint8ClampedArray(arrayBuffer);
 
             var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -27,6 +22,13 @@ function update_fractal() {
             for (var i = 0; i < rawData.length; i++) {
                 rawData[i] = byteArray[i];
             }
+            
+            $.get( "/compute_time", function ( data ) {
+                if(fractal_type == "fixed_fractal")
+                    $( "#fixed_speed" ).text( data + " ms" );
+                else if(fractal_type == "float_fractal")
+                    $( "#float_speed" ).text( data + " ms" );
+            });
 
             ctx.putImageData(imgData, 0, 0);
 
@@ -34,19 +36,19 @@ function update_fractal() {
         }
     };
 
-    oReq.send(null);
+    oReq.send( null );
 }
 
 function quitApp() {
-    $.get("/quit", function (data) {
-        $("#debug").text(data);
+    $.get( "/quit", function (data) {
+        $( "#debug" ).text(data);
     });
     window.cancelAnimationFrame();
 }
 
 function changeSize(zm, mx, my) {
-    width = Math.floor( $(window).width() );
-    height = Math.floor( $(window).height() );
+    width = Math.floor( $( "#canvas_container" ).width() );
+    height = Math.floor( $( "#canvas_container" ).height() );
 
     ctx.canvas.width = width;
     ctx.canvas.height = height;
@@ -61,50 +63,48 @@ function changeSize(zm, mx, my) {
 
         })
         .fail(function () {
-            alert("Could not resize Ada canvas");
+            alert( "Could not resize Ada canvas" );
         });
 }
 
-function change_zoom(amount) {
-    zoom += amount;
+changeSize(0, 0, 0);
 
-    if(zoom < zoomMin)
-        zoom = zoomMin;
-    else if(zoom > zoomMax)
-        zoom = zoomMax;
-}
-
-changeSize(zoom, 0, 0);
-
-$(window).resize(function () {
-    zoom = 1;
-    changeSize(zoom, 0, 0);
+$( window ).resize(function () {
+    changeSize(0, -1, -1);
 });
 
-$('#fractalCanvas').mousewheel(function(event) {
-    change_zoom(event.deltaY);
-    changeSize(zoom, event.pageX, event.pageY);
+$( '#fractalCanvas' ).mousewheel(function(event) {
+    changeSize(event.deltaY, event.pageX, event.pageY);
 });
 
-$('#fractalCanvas').click(function(event) {
-    if(event.shiftKey)
-        change_zoom(-20);
-    else
-        change_zoom(20);
+$( '#fractalCanvas' ).click(function(event) {
     event.preventDefault();
-    changeSize(zoom, event.pageX, event.pageY);
+    if(event.shiftKey)
+        changeSize(-10, event.pageX, event.pageY);
+    else
+        changeSize(10, event.pageX, event.pageY);
 });
 
-$('#fixed_mandlebrot').click(function() {
+$( '#fixed_mandlebrot' ).click(function() {
     fractal_type = "fixed_fractal";
-    $('#float_mandlebrot').removeClass('active');
-    $('#fixed_mandlebrot').addClass('active');
+    $( '#float_mandlebrot' ).removeClass( 'active' );
+    $( '#fixed_mandlebrot' ).addClass( 'active' );
+    changeSize(0, -1, -1);
 });
                              
-$('#float_mandlebrot').click(function() {
+$( '#float_mandlebrot' ).click(function() {
     fractal_type = "float_fractal";
-    $('#fixed_mandlebrot').removeClass('active');
-    $('#float_mandlebrot').addClass('active');
+    $( '#fixed_mandlebrot' ).removeClass( 'active' );
+    $( '#float_mandlebrot' ).addClass( 'active' );
+    changeSize(0, -1, -1);
+});
+
+$( '#reset_zoom' ).click(function() {
+    $.get( "/reset", function ( data ) {
+        
+    }).fail(function () {
+            alert( "Could not reset Ada canvas" );
+        });
 });
 
 window.requestAnimationFrame(update_fractal);

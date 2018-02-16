@@ -15,11 +15,9 @@ generic
 package Fractal is
    use CT;
 
-   procedure Set_Size (Width  : ImgWidth;
-                       Height : ImgHeight;
-                       Zoom   : ImgZoom;
-                       MouseX : ImgWidth;
-                       MouseY : ImgHeight);
+   procedure Init (Viewport : Viewport_Info);
+
+   procedure Set_Size (Viewport : Viewport_Info);
 
    procedure Calculate_Image (Esc    : Real;
                               Buffer : out Stream_Element_Array_Access);
@@ -60,7 +58,6 @@ private
    S_Width        : ImgWidth;
    S_Height       : ImgHeight;
    S_Zoom         : ImgZoom;
-
    S_Center       : Complex_Coordinate;
 
    S_Real_Step : Real;
@@ -97,6 +94,10 @@ private
    function Get_Coordinate (X : ImgWidth;
                             Y : ImgHeight)
                             return Complex_Coordinate;
+
+   function Get_Coordinate (Coord : Coordinate) return Complex_Coordinate is
+     (Get_Coordinate (X => Coord.X,
+                      Y => Coord.Y));
 
    function Get_Width return ImgWidth is
      (S_Width);

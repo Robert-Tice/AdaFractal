@@ -6,30 +6,44 @@ with GNAT.OS_Lib;
 
 package body Fractal is
 
-   procedure Set_Size (Width  : ImgWidth;
-                       Height : ImgHeight;
-                       Zoom   : ImgZoom;
-                       MouseX : ImgWidth;
-                       MouseY : ImgHeight)
+   procedure Init (Viewport : Viewport_Info)
    is
    begin
-      S_Width := Width;
-      S_Height := Height;
-      S_Zoom := Zoom;
+      S_Width := Viewport.Width;
+      S_Height := Viewport.Height;
+      S_Zoom := Viewport.Zoom;
 
-      S_Center := Get_Coordinate (X => MouseX,
-                                  Y => MouseY);
+      S_Center := Complex_Coordinate'(Re => To_Real (0),
+                                      Im => To_Real (0));
 
       Calculate_Bounds;
       Calculate_Step;
+   end Init;
+
+   procedure Set_Size (Viewport : Viewport_Info)
+   is
+   begin
+      S_Width := Viewport.Width;
+      S_Height := Viewport.Height;
+      S_Zoom := Viewport.Zoom;
+
+
+      S_Center := Get_Coordinate (Coord => Viewport.Center);
+
+      Calculate_Bounds;
+      Calculate_Step;
+
+      Put_Line ("Re:" & Image (S_Real_Min) & "," & Image (S_Real_Max) &
+                  " Im:" & Image (S_Imag_Min) & "," & Image (S_Imag_Max));
+      Put_Line ("Center:" & Image (S_Center.Re) & "," & Image (S_Center.Im));
    end Set_Size;
 
    function Get_Coordinate (X : ImgWidth;
                             Y : ImgHeight)
                             return Complex_Coordinate
    is
-      Real_Coord : constant Real := S_Real_Min + To_Real (X) * S_Real_Step;
-      Imag_Coord : constant Real := S_Imag_Min + To_Real (Y) * S_Imag_Step;
+      Real_Coord : constant Real := S_Real_Min + F_To_Real (Float (X) * To_Float (S_Real_Step));
+      Imag_Coord : constant Real := S_Imag_Min + F_To_Real (Float (Y) * To_Float (S_Imag_Step));
    begin
       return Complex_Coordinate'(Re => Real_Coord,
                                  Im => Imag_Coord);
@@ -39,8 +53,9 @@ package body Fractal is
    is
       Half_Real_Dist, Half_Imag_Dist : Real;
 
-      Inv_Aspect_Ratio               : constant Real := To_Real (S_Height) /
-                                         To_Real (S_Width);
+      Inv_Aspect_Ratio               : constant Real := F_To_Real(
+                                         Float (S_Height) /
+                                         Float (S_Width));
    begin
       Half_Real_Dist := Real_Distance_Unzoomed * To_Real (10) /
         (To_Real (S_Zoom) * To_Real (2));
@@ -49,15 +64,29 @@ package body Fractal is
       S_Real_Max := Half_Real_Dist + S_Center.Re;
       S_Real_Min := S_Center.Re - Half_Real_Dist;
 
+      if S_Real_Max > Real_Distance_Unzoomed / To_Real (2) then
+         S_Real_Max := Real_Distance_Unzoomed / To_Real (2);
+      end if;
+      if S_Real_Min < Real_Distance_Unzoomed / To_Real (-2) then
+         S_Real_Min := Real_Distance_Unzoomed / To_Real (-2);
+      end if;
+
       S_Imag_Max := Half_Imag_Dist + S_Center.Im;
       S_Imag_Min := S_Center.Im - Half_Imag_Dist;
+
+      if S_Imag_Max > Real_Distance_Unzoomed * Inv_Aspect_Ratio / To_Real (2) then
+         S_Imag_Max := Real_Distance_Unzoomed * Inv_Aspect_Ratio / To_Real (2);
+      end if;
+      if S_Imag_Min < Real_Distance_Unzoomed * Inv_Aspect_Ratio / To_Real (-2) then
+         S_Imag_Min := Real_Distance_Unzoomed * Inv_Aspect_Ratio / To_Real(-2);
+      end if;
    end Calculate_Bounds;
 
    procedure Calculate_Step
    is
    begin
-      S_Real_Step := (S_Real_Max - S_Real_Min) / To_Real (S_Width);
-      S_Imag_Step := (S_Imag_Max - S_Imag_Min) / To_Real (S_Height);
+      S_Real_Step := F_To_Real (To_Float (S_Real_Max - S_Real_Min) / Float (S_Width));
+      S_Imag_Step := F_To_Real (To_Float (S_Imag_Max - S_Imag_Min) / Float (S_Height));
    end Calculate_Step;
 
    procedure Calculate_Image (Esc    : Real;

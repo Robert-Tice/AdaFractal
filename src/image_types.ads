@@ -5,8 +5,15 @@ package Image_Types is
    subtype ImgZoom is Positive range 1 .. 1000;
 
    type Coordinate is record
-      X : ImgWidth;
-      Y : ImgHeight;
+      X : ImgWidth := ImgWidth'First;
+      Y : ImgHeight := ImgHeight'First;
+   end record;
+
+   type Viewport_Info is record
+      Width  : ImgWidth := ImgWidth'Last;
+      Height : ImgHeight := ImgHeight'Last;
+      Zoom   : ImgZoom := 10;
+      Center : Coordinate;
    end record;
 
    Pixel_Size : constant := 4;  --  bytes

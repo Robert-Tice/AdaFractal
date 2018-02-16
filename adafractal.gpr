@@ -5,10 +5,34 @@ project Adafractal is
    for Source_Dirs use ("src");
    for Object_Dir use "obj";
    for Main use ("main.adb");
-
+   type Build_Kind is
+      ("static", "relocatable", "static-pic");
+   Xmlada_Build : Build_Kind := external ("XMLADA_BUILD");
+   type Build_Kind1 is
+      ("static", "relocatable");
+   Aws_Build : Build_Kind1 := external ("AWS_BUILD");
 
    package Compiler is
-      for Switches ("ada") use ("-g", "-funroll-loops", "-gnatp", "-O2", "-gnatn");
+
+      case Xmlada_Build is
+
+         when "static" =>
+
+            case Aws_Build is
+
+               when "static" =>
+                  for Switches ("ada") use ("-g", "-gnatp", "-O2");
+
+               when "relocatable" =>
+                  for Switches ("ada") use ("-g", "-funroll-loops", "-gnatp", "-O2", "-gnatn");
+            end case;
+
+         when "relocatable" =>
+            for Switches ("ada") use ("-g", "-funroll-loops", "-gnatp", "-O2", "-gnatn");
+
+         when "static-pic" =>
+            for Switches ("ada") use ("-g", "-funroll-loops", "-gnatp", "-O2", "-gnatn");
+      end case;
    end Compiler;
 
    package Builder is

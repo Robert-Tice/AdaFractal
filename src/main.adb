@@ -15,6 +15,8 @@ begin
    Ada.Text_IO.Put_Line
      ("Serving on 127.0.0.1:" & Port'Img);
 
+   Router_Cb.Init;
+
    AWS.Server.Start (WS,
                      "Hello World",
                      Max_Connection => 1,
