@@ -7,8 +7,7 @@ generic
 package Julia_Set is
    use CT;
 
-   procedure Calculate_Pixel (Esc         : Real;
-                              Re          : Real;
+   procedure Calculate_Pixel (Re          : Real;
                               Im          : Real;
                               Z_Escape    : out Real;
                               Iter_Escape : out Natural);

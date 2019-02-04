@@ -1,12 +1,10 @@
 package body Julia_Set is
 
-   procedure Calculate_Pixel (Esc         : Real;
-                              Re          : Real;
+   procedure Calculate_Pixel (Re          : Real;
                               Im          : Real;
                               Z_Escape    : out Real;
                               Iter_Escape : out Natural)
    is
-      pragma Unreferenced (Esc);
 
       Re_Mod : Real := Re;
       Im_Mod : Real := Im;

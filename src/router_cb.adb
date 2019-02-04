@@ -191,13 +191,11 @@ package body Router_Cb is
       case Comp_Type is
          when Fixed_Type =>
             Fixed_Julia_Fractal.Calculate_Image 
-              (Esc    => Real_Fixed (Fixed_Julia_Fractal.Get_Frame),
-               Buffer => RawData);
+              (Buffer => RawData);
             Ret := Fixed_Julia_Fractal.Get_Buffer_Size;
          when Float_Type =>
             Float_Julia_Fractal.Calculate_Image 
-              (Esc    => Real_Float (Float_Julia_Fractal.Get_Frame),
-               Buffer => RawData);
+              (Buffer => RawData);
             Ret := Float_Julia_Fractal.Get_Buffer_Size;
       end case;
       

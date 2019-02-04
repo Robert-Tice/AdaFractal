@@ -23,6 +23,7 @@ package Router_Cb is
                new Stream_Element_Array (1 .. Max_Buffer_Size);
 
 private
+   Task_Pool_Size : constant := 16;
 
    Compute_Time : Duration := Duration'First;
 
@@ -85,7 +86,8 @@ private
                                          Escape_Threshold => 100.0);
 
    package Fixed_Julia_Fractal is new Fractal (CT              => Fixed_Computation,
-                                               Calculate_Pixel => Fixed_Julia.Calculate_Pixel);
+                                               Calculate_Pixel => Fixed_Julia.Calculate_Pixel,
+                                               Task_Pool_Size  => Task_Pool_Size);
 
 
    package Float_Computation is new Computation_Type (Real       => Real_Float,
@@ -99,7 +101,8 @@ private
                                          Escape_Threshold => 100.0);
 
    package Float_Julia_Fractal is new Fractal (CT              => Float_Computation,
-                                               Calculate_Pixel => Float_Julia.Calculate_Pixel);
+                                               Calculate_Pixel => Float_Julia.Calculate_Pixel,
+                                               Task_Pool_Size  => Task_Pool_Size);
 
    procedure ImgSize_Parse (URI : String);
 
