@@ -157,28 +157,26 @@ package body Fractal is
 
    end Calculate_Pixel_Color;
 
-   function Get_Frame return Color
+   procedure Increment_Frame
    is
    begin
       if S_Cnt_Up then
          if S_Frame_Counter = Color'Last then
             S_Cnt_Up := not S_Cnt_Up;
-            return S_Frame_Counter;
+            return;
          else
             S_Frame_Counter := S_Frame_Counter + 5;
-            return (S_Frame_Counter - 5);
+            return;
          end if;
       end if;
 
       if S_Frame_Counter = Color'First then
          S_Cnt_Up := not S_Cnt_Up;
-         return S_Frame_Counter;
+         return;
       end if;
 
       S_Frame_Counter := S_Frame_Counter - 5;
-      return (S_Frame_Counter + 5);
-
-   end Get_Frame;
+   end Increment_Frame;
 
    procedure Calculate_Row (Y      : ImgHeight;
                             Idx    : Stream_Element_Offset;

@@ -188,12 +188,15 @@ package body Router_Cb is
       Start_Time : constant Time := Clock;
       Ret : Stream_Element_Offset;
    begin
+      
       case Comp_Type is
          when Fixed_Type =>
+            Fixed_Julia_Fractal.Increment_Frame;
             Fixed_Julia_Fractal.Calculate_Image 
               (Buffer => RawData);
             Ret := Fixed_Julia_Fractal.Get_Buffer_Size;
          when Float_Type =>
+            Float_Julia_Fractal.Increment_Frame;
             Float_Julia_Fractal.Calculate_Image 
               (Buffer => RawData);
             Ret := Float_Julia_Fractal.Get_Buffer_Size;

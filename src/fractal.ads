@@ -22,7 +22,7 @@ package Fractal is
 
    procedure Calculate_Image (Buffer : not null Stream_Element_Array_Access);
 
-   function Get_Frame return Color;
+   procedure Increment_Frame;
 
    function Get_Buffer_Size return Stream_Element_Offset;
 
