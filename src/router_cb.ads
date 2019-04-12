@@ -2,7 +2,6 @@ with Ada.Streams; use Ada.Streams;
 
 with AWS.Response;
 with AWS.Status;
-with AWS.Utils; use AWS.Utils;
 
 with Computation_Type;
 with Image_Types; use Image_Types;
@@ -19,8 +18,8 @@ package Router_Cb is
    Max_Buffer_Size : constant :=
                        ImgWidth'Last * ImgHeight'Last * (Pixel_Size);
 
-   RawData : Stream_Element_Array_Access :=
-               new Stream_Element_Array (1 .. Max_Buffer_Size);
+   RawData : Buffer_Access :=
+               new Buffer_Array (1 .. Max_Buffer_Size);
 
 private
    Task_Pool_Size : constant := 16;
@@ -107,7 +106,7 @@ private
    procedure ImgSize_Parse (URI : String);
 
    function Compute_Image (Comp_Type : Computation_Enum)
-                           return Stream_Element_Offset;
+                           return Buffer_Offset;
 
    procedure Reset_Viewport;
 

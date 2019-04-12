@@ -1,3 +1,4 @@
+with "../AdaFractalLib/adafractallib.gpr";
 with "aws.gpr";
 
 project Adafractal is
