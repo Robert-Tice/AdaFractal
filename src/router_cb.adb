@@ -1,8 +1,10 @@
 with Ada.Calendar; use Ada.Calendar;
 with Ada.Text_IO; use Ada.Text_IO;
+with Ada.Unchecked_Conversion;
 
 with AWS.MIME;
 with AWS.Messages;
+with AWS.Utils; use AWS.Utils;
 
 with Fractal;
 
@@ -20,7 +22,15 @@ package body Router_Cb is
       URI      : constant String := AWS.Status.URI (Request);
       Filename : constant String := "web/" & URI (2 .. URI'Last);
       
+      function Buffer_To_Stream is new 
+        Ada.Unchecked_Conversion (Source => Buffer_Access,
+                                  Target => Stream_Element_Array_Access);
+      
+      Data_Stream : constant Stream_Element_Array_Access := 
+                      Buffer_To_Stream (RawData);
+      
       Buffer_Size : Stream_Element_Offset;
+      
    begin
 --      Put_Line ("URI: " & URI);
       
@@ -31,20 +41,20 @@ package body Router_Cb is
          
       --  Requests a new image from the server with fixed point numbers
       elsif URI = "/fixed_fractal" then       
-         Buffer_Size := Compute_Image (Comp_Type => Fixed_Type);
+         Buffer_Size := Stream_Element_Offset (Compute_Image (Comp_Type => Fixed_Type));
          
          return AWS.Response.Build
            (Content_Type  => AWS.MIME.Application_Octet_Stream,
-            Message_Body  => RawData (RawData'First ..
-                  RawData'First + Buffer_Size));
+            Message_Body  => Data_Stream (Data_Stream'First ..
+                  Data_Stream'First + Buffer_Size));
       --  Requests a new image from the server with floating point numbers
       elsif URI = "/float_fractal" then
-         Buffer_Size := Compute_Image (Comp_Type => Float_Type);
+         Buffer_Size := Stream_Element_Offset (Compute_Image (Comp_Type => Float_Type));
          
          return AWS.Response.Build
            (Content_Type  => AWS.MIME.Application_Octet_Stream,
-            Message_Body  => RawData (RawData'First ..
-                  RawData'First + Buffer_Size));
+            Message_Body  => Data_Stream (Data_Stream'First ..
+                  Data_Stream'First + Buffer_Size));
          
       --  Resets the viewport to the default view
       elsif URI = "/reset" then
@@ -183,10 +193,10 @@ package body Router_Cb is
    end ImgSize_Parse;
    
    function Compute_Image (Comp_Type : Computation_Enum) 
-                           return Stream_Element_Offset
+                           return Buffer_Offset
    is
       Start_Time : constant Time := Clock;
-      Ret : Stream_Element_Offset;
+      Ret : Buffer_Offset;
    begin
       
       case Comp_Type is
