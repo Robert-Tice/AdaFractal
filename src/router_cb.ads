@@ -4,7 +4,7 @@ with AWS.Response;
 with AWS.Status;
 
 with Computation_Type;
-with Image_Types; use Image_Types;
+with Image_Types;
 with Fractal;
 with Julia_Set;
 
@@ -15,8 +15,37 @@ package Router_Cb is
 
    Server_Alive  : Boolean := True;
 
-   Max_Buffer_Size : constant :=
-                       ImgWidth'Last * ImgHeight'Last * (Pixel_Size);
+   type Color is new Natural range 0 .. 255
+     with Size => 8;
+
+   Max_Iterations : constant := Color'Last / 5;
+
+   type RGB888_Pixel is record
+      Red   : Color;
+      Green : Color;
+      Blue  : Color;
+      Alpha : Color;
+   end record
+     with Size => 32;
+
+   for RGB888_Pixel use record
+      Red at 0 range 0 .. 7;
+      Green at 1 range 0 .. 7;
+      Blue at 2 range 0 .. 7;
+      Alpha at 3 range 0 .. 7;
+   end record;
+
+   procedure Color_Pixel (Z_Escape    : Boolean;
+                          Iter_Escape : Natural;
+                          Px          : out RGB888_Pixel);
+
+   package RGB888_IT is new Image_Types (Pixel          => RGB888_Pixel,
+                                         Color_Pixel    => Color_Pixel,
+                                         Max_Iterations => Max_Iterations);
+   use RGB888_IT;
+
+   Max_Buffer_Size : constant Buffer_Offset :=
+                       Buffer_Offset (ImgWidth'Last * ImgHeight'Last *  (RGB888_Pixel'Size / 8));
 
    RawData : Buffer_Access :=
                new Buffer_Array (1 .. Max_Buffer_Size);
@@ -30,6 +59,11 @@ private
 
    type Computation_Enum is
      (Fixed_Type, Float_Type);
+
+   Frame_Counter  : Color := 0;
+   Cnt_Up : Boolean := True;
+
+   procedure Increment_Frame;
 
    type Real_Float is new Float;
 
@@ -82,9 +116,11 @@ private
                                                       Image      => Fixed_Image);
 
    package Fixed_Julia is new Julia_Set (CT               => Fixed_Computation,
+                                         IT               => RGB888_IT,
                                          Escape_Threshold => 100.0);
 
    package Fixed_Julia_Fractal is new Fractal (CT              => Fixed_Computation,
+                                               IT              => RGB888_IT,
                                                Calculate_Pixel => Fixed_Julia.Calculate_Pixel,
                                                Task_Pool_Size  => Task_Pool_Size);
 
@@ -97,9 +133,11 @@ private
                                                       Image      => Float_Image);
 
    package Float_Julia is new Julia_Set (CT               => Float_Computation,
+                                         IT               => RGB888_IT,
                                          Escape_Threshold => 100.0);
 
    package Float_Julia_Fractal is new Fractal (CT              => Float_Computation,
+                                               IT              => RGB888_IT,
                                                Calculate_Pixel => Float_Julia.Calculate_Pixel,
                                                Task_Pool_Size  => Task_Pool_Size);
 

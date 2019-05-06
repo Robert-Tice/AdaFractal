@@ -16,6 +16,39 @@ package body Router_Cb is
       Float_Julia_Fractal.Init (Viewport => Viewport);
       Fixed_Julia_Fractal.Init (Viewport => Viewport);
    end Init;
+   
+   procedure Color_Pixel (Z_Escape    : Boolean;
+                          Iter_Escape : Natural;
+                          Px          : out RGB888_Pixel)
+   is
+      Value : constant Integer := 765 * (Iter_Escape - 1) / Max_Iterations;
+   begin
+      if Z_Escape then
+         if Value > 510 then
+            Px := RGB888_Pixel'(Red   => Color'Last - Frame_Counter,
+                                Green => Color'Last,
+                                Blue  => Color (Value rem Integer (Color'Last)),
+                                Alpha => Color'Last);
+         elsif Value > 255 then
+            Px := RGB888_Pixel'(Red   => Color'Last - Frame_Counter,
+                                Green => Color (Value rem Integer (Color'Last)),
+                                Blue  => Color'First + Frame_Counter,
+                                Alpha => Color'Last);
+         else
+            Px := RGB888_Pixel'(Red   => Color (Value rem Integer (Color'Last)),
+                                Green => Color'First + Frame_Counter,
+                                Blue  => Color'First,
+                                Alpha => Color'Last);
+         end if;
+      else
+         Px := RGB888_Pixel'(Red   => Color'First + Frame_Counter,
+                             Green => Color'First + Frame_Counter,
+                             Blue  => Color'First + Frame_Counter,
+                             Alpha => Color'Last);
+      end if;
+      
+      
+   end Color_Pixel;
 
    function Router (Request : AWS.Status.Data) return AWS.Response.Data
    is
@@ -192,6 +225,27 @@ package body Router_Cb is
 
    end ImgSize_Parse;
    
+   procedure Increment_Frame
+   is
+   begin
+      if Cnt_Up then
+         if Frame_Counter = Color'Last then
+            Cnt_Up := not Cnt_Up;
+            return;
+         else
+            Frame_Counter := Frame_Counter + 5;
+            return;
+         end if;
+      end if;
+
+      if Frame_Counter = Color'First then
+         Cnt_Up := not Cnt_Up;
+         return;
+      end if;
+
+      Frame_Counter := Frame_Counter - 5;
+   end Increment_Frame;
+   
    function Compute_Image (Comp_Type : Computation_Enum) 
                            return Buffer_Offset
    is
@@ -201,12 +255,12 @@ package body Router_Cb is
       
       case Comp_Type is
          when Fixed_Type =>
-            Fixed_Julia_Fractal.Increment_Frame;
+            Increment_Frame;
             Fixed_Julia_Fractal.Calculate_Image 
               (Buffer => RawData);
             Ret := Fixed_Julia_Fractal.Get_Buffer_Size;
          when Float_Type =>
-            Float_Julia_Fractal.Increment_Frame;
+            Increment_Frame;
             Float_Julia_Fractal.Calculate_Image 
               (Buffer => RawData);
             Ret := Float_Julia_Fractal.Get_Buffer_Size;
